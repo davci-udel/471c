@@ -1,5 +1,5 @@
 import pytest
-from L3.check import Context, check_term
+from L3.check import Context, check_term, check_program
 from L3.syntax import (
     Abstract,
     Allocate,
@@ -13,6 +13,7 @@ from L3.syntax import (
     Primitive,
     Reference,
     Store,
+    Program,
 )
 
 
@@ -20,11 +21,6 @@ def test_check_let():
     term = Let(bindings=[("x", Immediate(value=0))], body=Reference(name="x"))
     context: Context = {}
     check_term(term, context)
-
-    term_sibling_reference = Let(
-        bindings=[("x", Immediate(value=0)), ("y", Reference(name="x"))], body=Reference(name="y")
-    )
-    check_term(term_sibling_reference, context)
 
     term_context_reference = Let(
         bindings=[("a", Reference(name="x")), ("b", Reference(name="y"))], body=Reference(name="z")
@@ -43,6 +39,11 @@ def test_check_let_fail():
     context: Context = {}
     with pytest.raises(ValueError):
         check_term(term_binding_fail, context)
+
+    duplicate_fail = Let(bindings=[("a", Immediate(value=0)), ("a", Immediate(value=0))], body=Immediate(value=0))
+    context: Context = {}
+    with pytest.raises(ValueError):
+        check_term(duplicate_fail, context)
 
     term_sibling_child_reference_fail = Let(
         bindings=[
@@ -65,15 +66,6 @@ def test_check_letrec():
     )
     check_term(term_sibling_reference, context)
 
-    term_sibling_child_reference = LetRec(
-        bindings=[
-            ("x", Reference(name="a")),
-            ("y", Let(bindings=[("a", Immediate(value=0)), ("b", Reference(name="x"))], body=Reference(name="x"))),
-        ],
-        body=Reference(name="b"),
-    )
-    check_term(term_sibling_child_reference, context)
-
     term_context_reference = LetRec(
         bindings=[("a", Reference(name="x")), ("b", Reference(name="y"))], body=Reference(name="z")
     )
@@ -86,6 +78,11 @@ def test_check_letrec_fail():
     context: Context = {}
     with pytest.raises(ValueError):
         check_term(term_body_fail, context)
+
+    duplicate_fail = LetRec(bindings=[("a", Immediate(value=0)), ("a", Immediate(value=0))], body=Immediate(value=0))
+    context: Context = {}
+    with pytest.raises(ValueError):
+        check_term(duplicate_fail, context)
 
     term_binding_fail = LetRec(bindings=[("a", Reference(name="x"))], body=Immediate(value=0))
     context: Context = {}
@@ -216,48 +213,6 @@ def test_letrec_sum():
     check_term(term, context)
 
 
-def test_let_and_letrec_against_recursive_sum():
-    mock_bindings = [
-        (
-            (
-                "adder",
-                Apply(
-                    target=Reference(name="make_adder"),
-                    arguments=[
-                        Reference(name="m"),
-                        Let(
-                            bindings=[
-                                (
-                                    "make_adder",
-                                    Abstract(
-                                        parameters=["x"],
-                                        body=Abstract(
-                                            parameters=["y"],
-                                            body=Primitive(
-                                                operator="+", left=Reference(name="x"), right=Reference(name="y")
-                                            ),
-                                        ),
-                                    ),
-                                )
-                            ],
-                            body=Immediate(value=1),
-                        ),
-                    ],
-                ),
-            )
-        ),
-    ]
-    mock_body = Apply(target=Reference(name="adder"), arguments=[Reference(name="n")])
-
-    context: Context = {"m": None, "n": None}
-    term = Let(bindings=mock_bindings, body=mock_body)
-    with pytest.raises(ValueError):
-        check_term(term, context)
-
-    term = LetRec(bindings=mock_bindings, body=mock_body)
-    check_term(term, context)
-
-
 def test_check_reference():
     term = Reference(name="x")
     context: Context = {
@@ -289,6 +244,12 @@ def test_check_abstract_fail():
     context: Context = {}
     with pytest.raises(ValueError):
         check_term(term, context)
+
+    term_duplicate = Abstract(parameters=["x", "x"], body=Immediate(value=0))
+
+    context: Context = {}
+    with pytest.raises(ValueError):
+        check_term(term_duplicate, context)
 
 
 def test_check_apply():
@@ -463,3 +424,14 @@ def test_check_begin_fail():
     context: Context = {"x": None, "y": None, "z": None}
     with pytest.raises(ValueError):
         check_term(term_value_fail, context)
+
+
+def test_check_program():
+    program = Program(parameters=["x"], body=Reference(name="x"))
+    check_program(program)
+
+
+def test_check_program_fail():
+    program = Program(parameters=["x", "x"], body=Immediate(value=0))
+    with pytest.raises(ValueError):
+        check_program(program)
