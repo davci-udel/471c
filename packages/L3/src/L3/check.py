@@ -18,7 +18,6 @@ from .syntax import (
     Reference,
     Store,
     Term,
-    Program,
 )
 
 type Context = Mapping[Identifier, None]

@@ -102,10 +102,6 @@ def test_check_term_letrec_duplicate_binders():
         check_term(term, context)
 
 
-def test_check_term_reference_bound():
-    term = Reference(name="x")
-
-
 def test_let_sum():
     term = Let(
         bindings=[
