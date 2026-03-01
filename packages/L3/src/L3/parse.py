@@ -102,14 +102,6 @@ class AstTransformer(Transformer[Token, Program | Term]):
         )
 
     @v_args(inline=True)
-    def reference(
-        self,
-        _: Token,
-        name: Identifier,
-    ) -> Term:
-        return Reference(name=name)
-
-    @v_args(inline=True)
     def abstract(self, _: Token, parameters: Sequence[Identifier], body: Term) -> Term:
         return Abstract(parameters=parameters, body=body)
 
@@ -118,10 +110,6 @@ class AstTransformer(Transformer[Token, Program | Term]):
         terms: Sequence[Term] = [cast(Term, child) for child in tree.children]
         target, arguments = terms[0], terms[1:]
         return Apply(target=target, arguments=arguments)
-
-    @v_args(inline=True)
-    def immediate(self, _: Token, value: int) -> Term:
-        return Immediate(value=value)
 
     @v_args(inline=True)
     def primitive(self, operator: Token, left: Term, right: Term) -> Term:
