@@ -103,8 +103,8 @@ def collect_uses(term: L2.Term) -> set[L2.Identifier]:
 
         case L2.Apply(target=target, arguments=arguments):
             uses = collect_uses(term=target)
-            for t in arguments:
-                uses = uses | collect_uses(term=t)
+            for te in arguments:
+                uses = uses | collect_uses(term=te)
             return uses
 
         case L2.Immediate(value=_):
