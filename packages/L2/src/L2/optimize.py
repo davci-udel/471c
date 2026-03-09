@@ -92,8 +92,7 @@ def collect_uses(term: L2.Term) -> set[L2.Identifier]:
         case L2.Let(bindings=bindings, body=body):
             uses = collect_uses(term=body)
             for name, t in bindings:
-                if name in uses:
-                    uses = (uses - {name}) | collect_uses(term=t)
+                uses = uses | collect_uses(term=t)
             return uses
 
         case L2.Reference(name=name):
@@ -138,36 +137,28 @@ def collect_uses(term: L2.Term) -> set[L2.Identifier]:
             return uses
 
 
-def dead_code_elimination(term: L2.Term) -> L2.Term | None:
+def dead_code_elimination(term: L2.Term) -> L2.Term:
     match term:
         case L2.Let(bindings=bindings, body=body):
             new_body = dead_code_elimination(term=body)
-            assert new_body is not None
             new_bindings: Sequence[tuple[L2.Identifier, L2.Term]] = []
             uses = collect_uses(term=body)
             for name, te in bindings:
                 if name in uses:
-                    survived_term = dead_code_elimination(term=te)
-                    assert survived_term is not None
-                    new_bindings.append((name, survived_term))
+                    new_bindings.append((name, dead_code_elimination(term=te)))
             return L2.Let(bindings=new_bindings, body=new_body)
 
         case L2.Reference(name=name):
             return term
 
         case L2.Abstract(parameters=parameters, body=body):
-            new_body = dead_code_elimination(term=body)
-            assert new_body is not None
-            return L2.Abstract(parameters=parameters, body=new_body)
+            return L2.Abstract(parameters=parameters, body=dead_code_elimination(term=body))
 
         case L2.Apply(target=target, arguments=arguments):
             new_target = dead_code_elimination(term=target)
-            assert new_target is not None
             new_arguments: Sequence[L2.Term] = []
             for t in arguments:
-                survived_term = dead_code_elimination(term=t)
-                assert survived_term is not None
-                new_arguments.append(survived_term)
+                new_arguments.append(dead_code_elimination(term=t))
             return L2.Apply(
                 target=new_target,
                 arguments=new_arguments,
@@ -177,50 +168,36 @@ def dead_code_elimination(term: L2.Term) -> L2.Term | None:
             return term
 
         case L2.Primitive(operator=operator, left=left, right=right):
-            le = dead_code_elimination(term=left)
-            ri = dead_code_elimination(term=right)
-            assert le is not None
-            assert ri is not None
             return L2.Primitive(
                 operator=operator,
-                left=le,
-                right=ri,
+                left=dead_code_elimination(term=left),
+                right=dead_code_elimination(term=right),
             )
 
         case L2.Branch(operator=operator, left=left, right=right, consequent=consequent, otherwise=otherwise):
-            le = dead_code_elimination(term=left)
-            ri = dead_code_elimination(term=right)
-            assert le is not None
-            assert ri is not None
-            cons = dead_code_elimination(term=consequent)
-            other = dead_code_elimination(term=otherwise)
-            assert cons is not None
-            assert other is not None
-            return L2.Branch(operator=operator, left=le, right=ri, consequent=cons, otherwise=other)
+            return L2.Branch(
+                operator=operator,
+                left=dead_code_elimination(term=left),
+                right=dead_code_elimination(term=right),
+                consequent=dead_code_elimination(term=consequent),
+                otherwise=dead_code_elimination(term=otherwise),
+            )
 
         case L2.Allocate(count=_):
             return term
 
         case L2.Load(base=base, index=index):
-            b = dead_code_elimination(term=base)
-            assert b is not None
-            return L2.Load(base=b, index=index)
+            return L2.Load(base=dead_code_elimination(term=base), index=index)
 
         case L2.Store(base=base, index=_index, value=value):
-            b = dead_code_elimination(term=base)
-            v = dead_code_elimination(term=value)
-            assert b is not None
-            assert v is not None
             return L2.Store(
-                base=b,
+                base=dead_code_elimination(term=base),
                 index=_index,
-                value=v,
+                value=dead_code_elimination(term=value),
             )
 
         case L2.Begin(effects=effects, value=value):  # pragma: no branch
-            v = dead_code_elimination(term=value)
-            assert v is not None
-            return L2.Begin(effects=effects, value=v)
+            return L2.Begin(effects=effects, value=dead_code_elimination(term=value))
 
 
 def optimize_program(
@@ -233,5 +210,4 @@ def optimize_program(
             for _ in range(5):
                 folded_body = build_folding(term=folded_body, context=context)
             optimized_body = dead_code_elimination(term=folded_body)
-            assert optimized_body is not None
             return L2.Program(parameters=parameters, body=optimized_body)
