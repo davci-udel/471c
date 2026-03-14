@@ -15,37 +15,37 @@ def cps_convert_term(
     _terms = partial(cps_convert_terms, fresh=fresh)
 
     match term:
-        case L2.Let(bindings=bindings, body=body):
+        case L2.Let(bindings=_, body=_):
             pass
 
-        case L2.Reference(name=name):
+        case L2.Reference(name=_):
             pass
 
-        case L2.Abstract(parameters=parameters, body=body):
+        case L2.Abstract(parameters=_, body=_):
             pass
 
-        case L2.Apply(target=target, arguments=arguments):
+        case L2.Apply(target=_, arguments=_):
             pass
 
-        case L2.Immediate(value=value):
+        case L2.Immediate(value=_):
             pass
 
-        case L2.Primitive(operator=operator, left=left, right=right):
+        case L2.Primitive(operator=_, left=_, right=_):
             pass
 
-        case L2.Branch(operator=operator, left=left, right=right, consequent=consequent, otherwise=otherwise):
+        case L2.Branch(operator=_, left=_, right=_, consequent=_, otherwise=_):
             pass
 
-        case L2.Allocate(count=count):
+        case L2.Allocate(count=_):
             pass
 
-        case L2.Load(base=base, index=index):
+        case L2.Load(base=_, index=_):
             pass
 
-        case L2.Store(base=base, index=index, value=value):
+        case L2.Store(base=_, index=_, value=_):
             pass
 
-        case L2.Begin(effects=effects, value=value):  # pragma: no branch
+        case L2.Begin(effects=_, value=_):  # pragma: no branch
             pass
 
 

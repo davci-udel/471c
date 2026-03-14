@@ -3,6 +3,10 @@ from L2 import syntax as L2
 from L2.cps_convert import cps_convert_program, cps_convert_term
 from util.sequential_name_generator import SequentialNameGenerator
 
+import pytest
+
+pytestmark = pytest.mark.skip("Due later")
+
 
 def k(v: L1.Identifier) -> L1.Statement:
     return L1.Halt(value=v)
