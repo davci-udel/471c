@@ -8,8 +8,7 @@ from L3.check import check_program
 from L3.eliminate_letrec import eliminate_letrec_program
 from L3.uniqify import uniqify_program
 
-from .convert import convert_to_l3
-from .parse import parse_program
+from L4.convert import convert_to_l3, dummy_parse
 
 
 @click.command(
@@ -47,7 +46,7 @@ def main(
     optimize: bool,
     input: Path,
 ) -> None:
-    l4 = parse_program(input.read_text())
+    l4 = dummy_parse(input.read_text())
     l3 = convert_to_l3(l4)
 
     if check:

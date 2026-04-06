@@ -304,6 +304,10 @@ def convert_to_l3(
             )
 
 
+def dummy_parse(code: str) -> L4.Program:
+    return L4.Program(definitions=[(code, L4.Void(), L4.Empty)], body=L4.Empty())
+
+
 def check_expression(
     expression: L4.Expression,
     context: Context,
